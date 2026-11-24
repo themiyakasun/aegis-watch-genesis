@@ -1,0 +1,22 @@
+name: validate-prometheus-config
+on:
+  pull_request:
+    paths: ["prometheus.yml", "rules/**", "docker-compose.yml"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Yaml
+        run: |
+          pip install yamllint
+          yamllint -d "{extends: default, rules: {line-length: disable. document-start: disable}}" prometheus.yml docker-compose.yml
+
+      - name: promtool check config
+        run: |
+          docker run --rm --entrypoint promtool -v "$PWD/prometheus.yml:/etc/prometheus/prometheus.yml:ro" prom/prometheus:v3.0.0 check config /etc/prometheus/prometheus.yml
+
+      - name: Validate compose file
+        run: docker compose config -q
